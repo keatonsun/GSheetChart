@@ -1,0 +1,70 @@
+<div>
+
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=<?= PropertiesService.getUserProperties().getProperty("apiKey") ?>"></script>
+
+<div style="position:absolute;width:95%;height:95%;" id="container">
+</div>
+
+
+<script type="text/javascript">
+
+
+function createMap(o) {
+  var init = {lat : 36.393300, lng : 104.889338, zoom : 5};
+  if (o.values.length > 0) {
+    init.lat = (o.maxLat + o.minLat) / 2;
+    init.lng = (o.maxLng + o.minLng) / 2;
+    init.zoom = 11 - Math.ceil(Math.max(o.maxLat - o.minLat, o.maxLng - o. minLng));
+  }
+
+  var mapOptions = {
+    center: new google.maps.LatLng(init.lat, init.lng),
+    zoom: init.zoom,
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+  };
+  var map = new google.maps.Map(document.getElementById("container"), mapOptions);
+  
+  if (o.values.length > 0) {
+    renderValues(o.values, map, o.maxValue, o.minValue);
+  } else {
+    alert("No valid data.");
+  }
+}
+
+function renderValues(values, map, max, min) {
+  var radiusCalculator = (function(maxV, minV) {
+    return function(v) {
+      if (max == min && null == v) {
+        return 10000;
+      } else {
+        var maxsize = 25000;
+        return Math.sqrt(v / maxV) * maxsize;
+      }
+    };
+  }).call(this, max, min);
+
+  values.forEach(function(e, i) {
+    var circle = new google.maps.Circle({
+      map : map,
+      fillColor : "#FFAA00",
+      fillOpacity : 1,
+      strokeWeight : 0,
+      center : new google.maps.LatLng(e.lat, e.lng),
+      radius : radiusCalculator(e.value)
+    });
+    
+    var info = new google.maps.InfoWindow({
+      content: e.name + "<br>" + e.lat + ", " + e.lng + (e.value != null ? "<br>" + e.value : "") ,
+      position: circle.getCenter()
+    });
+    
+    google.maps.event.addListener(circle, 'click', function(e) {
+      info.open(map);
+    });
+  });
+}
+
+google.script.run.withSuccessHandler(createMap).processData();
+
+</script>
+</div>
